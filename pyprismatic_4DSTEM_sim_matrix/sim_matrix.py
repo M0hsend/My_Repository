@@ -111,12 +111,36 @@ def run_sim(xyz, conv_semiangle, def_val):
     
     meta.go()
 
+
+def add_dose_noise(file_path, dose, noiseless=False):
+    '''
+    gets an h5 simulated 4DSTEM file and adds a dataset with dose multiplied to each frame.
+    '''
+    with h5py.File(file_path) as f:
+        sh = f['4DSTEM_simulation/data/datacubes/CBED_array_depth0000/datacube'].shape
+        print('Dataset shape is %s' % str(sh))
+        data = f.get('4DSTEM_simulation/data/datacubes/CBED_array_depth0000/datacube')
+        data = np.array(data)
+
+    data_highD = dose * data
+    if noiseless != False:
+        data_highD = np.random.poisson(data_highD)
+    f = h5py.File(file_path, 'a')
+    f.create_dataset('4DSTEM_simulation/data/datacubes/hdose_noisy_data', data=data_highD, dtype='float32')
+    f.close()
+
+    return
+
 def main():
     for atom_model in list(coord_dict.keys()):
         for conv_semi in list(convergence_dict.keys()):
             for def_val in list(def_dict.keys()):
                 run_sim(atom_model, conv_semi, def_val)
-    
+    # add dose and noise
+    for dirname, dirnames, filenames in os.walk(root_path):
+        for filename in filenames:
+            if os.path.splitext(filename)[1] == '.h5':
+                add_dose_noise(os.path.join(dirname,filename), 1e6)
 if __name__ =='__main__':
     main()
     
