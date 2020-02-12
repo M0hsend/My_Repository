@@ -1,6 +1,6 @@
 --algorithm:m
---input-file:/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/Graphene_SW_mod1.xyz
---output-file:/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_v2/graphene_small_hole_20mrad_300A_def/graphene_small_hole_20mrad_300A_def.h5
+--input-file:/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/graphene_island_doped_extended.xyz
+--output-file:/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_v2/graphene_island_doped_25mrad_300A_def/graphene_island_doped_25mrad_300A_def.h5
 --num-threads:12
 --pixel-size-x:0.2
 --pixel-size-y:0.2
@@ -14,12 +14,12 @@
 --batch-size-cpu:1
 --probe-step-x:0.2
 --probe-step-y:0.2
---cell-dimension:29.03 29.03 1.1168
+--cell-dimension:50.1717 50.4031 6.6485
 --tile-uc:1 1 1
 --probe-defocus:300
 -C3:0
 -C5:0
---probe-semiangle:20
+--probe-semiangle:25
 --detector-angle-step:1
 --probe-xtilt:0
 --probe-ytilt:0

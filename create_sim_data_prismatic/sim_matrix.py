@@ -196,11 +196,7 @@ def main():
             for def_val in list(def_dict.keys()):
                 sim_file = run_sim(atom_model, conv_semi, def_val)
                 add_dose_noise(sim_file, 1e6)
-    # add dose and noise
-#    for dirname, dirnames, filenames in os.walk(root_path):
-#        for filename in filenames:
-#            if os.path.splitext(filename)[1] == '.h5':
-#                add_dose_noise(os.path.join(dirname,filename), 1e6)
+
     
 if __name__ =='__main__':
     main()

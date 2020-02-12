@@ -3,8 +3,8 @@
 #$ -q high.q
 #$ -l redhat_release=rhel7
 #$ -l m_mem_free=10G
-#$ -o /dls/science/groups/e02/Mohsen/code/sim_4DSTEM/logs_savefig
-#$ -e /dls/science/groups/e02/Mohsen/code/sim_4DSTEM/logs_savefig
+#$ -o /dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/logs/logs_savefig
+#$ -o /dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/logs/logs_savefig
 
 module load ptypy/latest
 

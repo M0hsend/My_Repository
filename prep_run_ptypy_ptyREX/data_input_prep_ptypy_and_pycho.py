@@ -27,6 +27,7 @@ def parse_params_file(params_file, drop_unneeded = True):
             line = line.strip('-')
             exp_dict[line.strip().partition(':')[0]] = line.strip().partition(':')[-1]
     
+    
     exp_dict['data'] = exp_dict.pop('output-file')
     exp_dict['xyz'] = exp_dict.pop('input-file')
     exp_dict['accel_voltage(eV)'] = int(exp_dict.pop('energy')) * 1000
@@ -81,10 +82,16 @@ def parse_params_file(params_file, drop_unneeded = True):
     elif exp_dict['semi_angle(rad)'] == 0.025:
         exp_dict['pupil_rad(pixels)'] = 15.5
     
-    exp_dict['detector_distance(m)'] = 0.135
+    exp_dict['detector_distance(m)'] = 0.143
     exp_dict['detector_pixel_size(m)'] = 220e-6
     
-    exp_dict['mask'] = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/masks/mask_64by64.h5'
+    with h5py.File(exp_dict['data']) as f:
+        sh = f['4DSTEM_simulation/data/datacubes/hdose_noisy_data'].shape
+    
+    if sh[-1] == 128:
+        exp_dict['mask'] = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/masks/mask_128by128.h5'
+    elif sh[-1] == 72:
+        exp_dict['mask'] = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/masks/mask_72by72.h5'
     exp_dict['output_base'] = os.path.dirname(exp_dict['data'])
     
     exp_dict['rotation_angle(degrees)'] = 0
@@ -99,9 +106,9 @@ def parse_params_file(params_file, drop_unneeded = True):
 def prep_ptypy_data(exp_dict):
     
     with h5py.File(exp_dict['data']) as f:
-        sh = f['4DSTEM_simulation/data/datacubes/CBED_array_depth0000/datacube'].shape
+        sh = f['4DSTEM_simulation/data/datacubes/hdose_noisy_data'].shape
         print('Dataset shape is %s' % str(sh))
-        data = f.get('4DSTEM_simulation/data/datacubes/CBED_array_depth0000/datacube')
+        data = f.get('4DSTEM_simulation/data/datacubes/hdose_noisy_data')
         data = np.array(data)
     mask = io.h5read(exp_dict['mask'])['mask']
     
@@ -264,10 +271,8 @@ class NestedDefaultDict(collections.defaultdict):
     
 def write_ptyrex_json(exp_dict):
     with h5py.File(exp_dict['data']) as f:
-        data = f.get('4DSTEM_simulation/data/datacubes/CBED_array_depth0000/datacube')
+        data = f.get('4DSTEM_simulation/data/datacubes/hdose_noisy_data')
         data_arr = np.array(data)
-        if data_arr[0,0].sum() <= 1.:
-            data[...] = 4096*data_arr/data_arr.max()
     
     scan_y = data_arr.shape[1]
     scan_x = data_arr.shape[0]
@@ -293,7 +298,7 @@ def write_ptyrex_json(exp_dict):
     params['process']['common']['detector']['pix_pitch'] = list([exp_dict['detector_pixel_size(m)'], exp_dict['detector_pixel_size(m)']])
     params['process']['common']['detector']['distance'] = exp_dict['detector_distance(m)']
     params['process']['common']['detector']['bin'] = list([1, 1]) 
-    params['process']['common']['detector']['min_max'] = list([0, 100000])
+    params['process']['common']['detector']['min_max'] = list([0, 1000000])
     params['process']['common']['detector']['optic_axis']= list([N_x / 2, N_x/2])
     params['process']['common']['detector']['crop'] = list([N_x, N_y])
     params['process']['common']['detector']['orientation'] = '00'
@@ -324,7 +329,7 @@ def write_ptyrex_json(exp_dict):
     params['experiment']['data']['flat_field_path'] = exp_dict['mask']
     params['experiment']['data']['load_flag'] = 1
     params['experiment']['data']['meta_type'] = 'hdf'
-    params['experiment']['data']['key'] = '4DSTEM_simulation/data/datacubes/CBED_array_depth0000/datacube'
+    params['experiment']['data']['key'] = '4DSTEM_simulation/data/datacubes/hdose_noisy_data'
     
     params['experiment']['sample']['position'] = list([0, 0, 0])
 
