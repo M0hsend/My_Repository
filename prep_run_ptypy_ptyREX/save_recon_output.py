@@ -230,7 +230,7 @@ def save_recon_fig(file_path):
         saving_path1 = os.path.splitext(file_path)[0]+ file_path.split('/')[-2]+'.png'
         plt.savefig(saving_path1)
         
-        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/output_figs_ptyREX_20200212/'
+        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_v2/graphene_small_hole_20mrad_200A_def/rotation_test/output_figures/'
         if not os.path.exists(base_path2):
             os.mkdir(base_path2)
         saving_path2 = base_path2 + file_path.split('/')[-2]+'.png'
