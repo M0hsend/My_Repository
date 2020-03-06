@@ -113,7 +113,6 @@ def get_obj_func(file_path):
         f = h5py.File(file_path,'r')
         data = f['entry_1']['process_1']['output_1']['object'][0]
         data_arr = np.squeeze(data)
-    
     return data_arr
 
 def get_error(file_path):
@@ -177,13 +176,13 @@ def save_recon_fig(file_path):
         axs[0,0].set_title('Probe Phase')
         fig.colorbar(im1, ax = axs[0,0])
         im2 = axs[0,1].imshow(abs(probe))
-        axs[0,1].set_title('Probe modulus')
+        axs[0,1].set_title('Probe Modulus')
         fig.colorbar(im2, ax = axs[0,1])
         im3 = axs[1,0].imshow(np.angle(obj), vmin = vmin_obj_p, vmax = vmax_obj_p)
         axs[1,0].set_title('Object Phase')
         fig.colorbar(im3, ax = axs[1,0])
         im4 = axs[1,1].imshow(abs(obj), vmin = vmin_obj_m, vmax = vmax_obj_m)
-        axs[1,1].set_title('Object modulus')
+        axs[1,1].set_title('Object Modulus')
         fig.colorbar(im4, ax = axs[1,1])
         axs[2,0].plot(errors[:,0])
         axs[2,0].set_title('Fourier magnitude error vs iter')
@@ -194,7 +193,7 @@ def save_recon_fig(file_path):
         saving_path = os.path.splitext(ptyr_file_path)[0]+'.png'
         plt.savefig(saving_path)
         
-        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/output_figs_ptypy_20200212/'
+        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/output_figs_ptypy_20200213/'
         if not os.path.exists(base_path2):
             os.mkdir(base_path2)
         saving_path2 = base_path2 + file_path.split('/')[-2]+'.png'
@@ -211,17 +210,27 @@ def save_recon_fig(file_path):
         
         fig.suptitle(os.path.splitext(os.path.basename(file_path))[0], fontsize = 18)
         
-        im1 = axs[0,0].imshow(probe.imag)
+        obj_phase = np.angle(obj)
+        s = obj_phase.shape[0]
+        vmin_obj_p = np.min(obj_phase[int(s*0.3):int(0.7*s), int(s*0.3):int(0.7*s)])
+        vmax_obj_p = np.max(obj_phase[int(s*0.3):int(0.7*s), int(s*0.3):int(0.7*s)])
+        
+        obj_mod = abs(obj)
+        s = obj_mod.shape[0]
+        vmin_obj_m = np.min(obj_mod[int(s*0.3):int(0.7*s), int(s*0.3):int(0.7*s)])
+        vmax_obj_m = np.max(obj_mod[int(s*0.3):int(0.7*s), int(s*0.3):int(0.7*s)])        
+        
+        im1 = axs[0,0].imshow(np.angle(probe))
         axs[0,0].set_title('Probe Phase')
         fig.colorbar(im1, ax = axs[0,0])
-        im2 = axs[0,1].imshow(probe.real)
-        axs[0,1].set_title('Probe Amplitude')
+        im2 = axs[0,1].imshow(abs(probe))
+        axs[0,1].set_title('Probe Modulus')
         fig.colorbar(im2, ax = axs[0,1])
-        im3 = axs[1,0].imshow(obj.imag)
+        im3 = axs[1,0].imshow(np.angle(obj), vmin = vmin_obj_p, vmax = vmax_obj_p)
         axs[1,0].set_title('Object Phase')
         fig.colorbar(im3, ax = axs[1,0])
-        im4 = axs[1,1].imshow(obj.real)
-        axs[1,1].set_title('Object Amplitude')
+        im4 = axs[1,1].imshow(abs(obj), vmin = vmin_obj_m, vmax = vmax_obj_m)
+        axs[1,1].set_title('Object Modulus')
         fig.colorbar(im4, ax = axs[1,1])
         axs[2,0].plot(errors)
         axs[2,0].set_title('Error vs iter')
@@ -230,7 +239,7 @@ def save_recon_fig(file_path):
         saving_path1 = os.path.splitext(file_path)[0]+ file_path.split('/')[-2]+'.png'
         plt.savefig(saving_path1)
         
-        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_v2/graphene_small_hole_20mrad_200A_def/rotation_test/output_figures/'
+        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/output_figs_ptREX_20200213/'
         if not os.path.exists(base_path2):
             os.mkdir(base_path2)
         saving_path2 = base_path2 + file_path.split('/')[-2]+'.png'

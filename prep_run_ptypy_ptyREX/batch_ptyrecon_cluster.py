@@ -68,7 +68,7 @@ def get_ptyREX_ready(sim_matrix_path):
     
 
 def main(sim_matrix_path):
-    script_path = '/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/prep_run_ptypy_ptyREX/'
+    script_path = '/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/prep_run_ptypy_ptyREX'
 #    dirs_to_prep = get_raw_dir_list(sim_matrix_path, get_all = True)
 #    for path in dirs_to_prep:
 #        it = scandir.scandir(path)
