@@ -13,27 +13,27 @@ from shutil import copyfile
 
 
 
-root_path = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_v2'
+root_path = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_v3'
 
 if not os.path.exists(root_path):
     os.mkdir(root_path)
 
-submit_path = '/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic'
+submit_path = '/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/create_sim_data_prismatic'
 
 
-coord_dict ={'/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/Graphene_SW_mod1.xyz':'graphene_small_hole',
-             '/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/graphene_island_extended.xyz':'graphene_island',
-             '/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/graphene_island_doped_extended.xyz': 'graphene_island_doped'}
+coord_dict ={'/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/create_sim_data_prismatic/xyz_files/Graphene_SW_mod1.xyz':'graphene_small_hole'}
+             #'/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/graphene_island_extended.xyz':'graphene_island',
+             #'/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/graphene_island_doped_extended.xyz': 'graphene_island_doped'}
 
 convergence_dict = {10:'10mrad',
                     15:'15mrad',
-                    20:'20mrad',
-                    25:'25mrad'}
+                    25:'25mrad',
+                    32:'32mrad'}
 
 def_dict = {0:'zero_def',
+            50:'50A_def',
             100:'100A_def',
-            200:'200A_def',
-            300:'300A_def'}
+            150:'150A_def'}
 
 def make_output_filename(xyz, conv_semiangle, def_val):
     '''
@@ -100,15 +100,15 @@ def run_sim(xyz, conv_semiangle, def_val):
     sim_file_path = make_output_filename(xyz, conv_semiangle, def_val)
     # meta.writeParameters(param_filename(xyz, conv_semiangle, def_val))
     meta.numThreads = 12
-    meta.realspacePixelSizeX = 0.2
-    meta.realspacePixelSizeY = 0.2
+    meta.realspacePixelSizeX = 0.11
+    meta.realspacePixelSizeY = 0.11
     meta.potBound = 2
     meta.numFP = 8
     meta.sliceThickness = 8  # may change this 
     #meta.numSlices = 1
     #meta.zStart = 0
     meta.E0 = 80
-    meta.alphaBeamMax = 26
+    meta.alphaBeamMax = 35
     meta.batchSizeCPU = 1
     meta.probeStepX = 0.2
     meta.probeStepY = 0.2
@@ -190,12 +190,38 @@ def add_dose_noise(file_path, dose, add_noise = True):
     
     return
 
+
+def save_skips(file_path):
+    with h5py.File(file_path) as f:
+        print(file_path)
+        sh = f['4DSTEM_simulation/data/datacubes/hdose_noisy_data'].shape
+        print('Dataset shape is %s' % str(sh))
+        data = f.get('4DSTEM_simulation/data/datacubes/hdose_noisy_data')
+        data = np.array(data)
+    skips = [2,3,4]
+    for skip in skips:
+        data_new = data[::skip, ::skip, :, :]
+        new_fn = os.path.basename(file_path).split('.')[0] + '_skip'+ str(skip)+ '.h5'
+        saving_path = os.path.join(os.path.dirname(file_path), new_fn)
+        hf = h5py.File(saving_path, 'w')
+        print('creating the h5 file for the stack')
+        hf.create_dataset('dataset', data=data_new, compression='gzip')
+    return
+    
+
 def main():
-    for atom_model in list(coord_dict.keys()):
-        for conv_semi in list(convergence_dict.keys()):
-            for def_val in list(def_dict.keys()):
-                sim_file = run_sim(atom_model, conv_semi, def_val)
-                add_dose_noise(sim_file, 1e6)
+#    for atom_model in list(coord_dict.keys()):
+#        for conv_semi in list(convergence_dict.keys()):
+#            for def_val in list(def_dict.keys()):
+#                sim_file = run_sim(atom_model, conv_semi, def_val)
+#                add_dose_noise(sim_file, 1e6)
+    
+    
+    for dirname, dirnames, filenames in os.walk(root_path):
+
+        for filename in filenames:
+            if filename.endswith('h5'):
+                save_skips(os.path.join(dirname, filename))
 
     
 if __name__ =='__main__':

@@ -18,7 +18,7 @@ import numpy as np
 import os
 import h5py
 import argparse
-import scandir
+import json
 
 
 def get_ptypy_recon_list(sim_matrix_path):
@@ -44,7 +44,8 @@ def get_ptyREX_recon_list(sim_matrix_path):
     checks for the folders with recon dir in them
     '''
     recon_dirs = []
-
+    json_dirs = []
+    common_dirs = []
     for dirname, dirnames, filenames in os.walk(sim_matrix_path):
         # print path to all subdirectories first.
         #for subdirname in dirnames:
@@ -54,7 +55,10 @@ def get_ptyREX_recon_list(sim_matrix_path):
         for filename in filenames:
             if os.path.splitext(filename)[1] == '.hdf':
                 recon_dirs.append(os.path.join(dirname, filename))
-    return recon_dirs
+            if os.path.splitext(filename)[1] == '.json':
+                json_dirs.append(os.path.join(dirname, filename))
+
+    return recon_dirs, json_dirs
 
 def get_figs(sim_matrix_path):
     '''
@@ -148,6 +152,22 @@ def get_error(file_path):
         
     return errors
 
+
+def json_to_dict(json_path):
+    
+    with open(json_path) as jp:
+        json_dict = json.load(jp)
+    return json_dict
+
+
+
+def save_ptyREX_output(json_file_list):
+    """
+    file_path is the json full path - we expect the same file name with hdf5 extension in the same folder
+    """
+    
+
+
 def save_recon_fig(file_path):
     '''
     Gets the path for a ptypy recon and saves the corresponding formatted figure in the same dir
@@ -193,7 +213,7 @@ def save_recon_fig(file_path):
         saving_path = os.path.splitext(ptyr_file_path)[0]+'.png'
         plt.savefig(saving_path)
         
-        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/output_figs_ptypy_20200213/'
+        base_path2 = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/output_figs_ptyREX_matrix3/'
         if not os.path.exists(base_path2):
             os.mkdir(base_path2)
         saving_path2 = base_path2 + file_path.split('/')[-2]+'.png'
@@ -250,11 +270,12 @@ def save_recon_fig(file_path):
     return
         
 def main(scan_dir):
-    ptypy_recon_dirs = get_ptypy_recon_list(scan_dir)
-    for recon_file in ptypy_recon_dirs:
-        save_recon_fig(recon_file)
+#    ptypy_recon_dirs = get_ptypy_recon_list(scan_dir)
+#    for recon_file in ptypy_recon_dirs:
+#        save_recon_fig(recon_file)
         
-    ptyREX_recon_files = get_ptyREX_recon_list(scan_dir)
+    ptyREX_recon_files, json_files = get_ptyREX_recon_list(scan_dir)
+    
     for recon_file in ptyREX_recon_files:
         save_recon_fig(recon_file)
 

@@ -1,5 +1,4 @@
 import numpy as np
-from abb_func import FuncAberrUV
 from scipy import constants as pc
 from numpy.fft import fftshift, ifft2, ifftshift
 import matplotlib.pyplot as plt
@@ -7,7 +6,11 @@ import h5py
 
 
 def rad_array(arr_len):
-    #create array with values equal to distance in px from centre
+    """
+    create array with values equal to distance in px from centre
+    :param arr_len:
+    :return:
+    """
     half_len = arr_len / 2
     v = np.linspace(-half_len, half_len, arr_len)
     v = np.repeat(v, arr_len, axis = 0)
@@ -18,30 +21,93 @@ def rad_array(arr_len):
 
 def e_lambda(e_0):
     """
-    calculates the electron wavelength by taking the accelerating voltage in keV
-    input:
-        e_0 (accelerating voltage in keV)
-    
-    output:
-        e_lambda (electron wavelength in A)
+    relativistic electron wavelength
+
+    :param e_0: int
+        accelerating voltage in volts
+    :return:
+    e_lambda: float
+        wavelength in meters
     """
     import numpy as np
     
-    m = 9.109383*10**-31 # electron rest mass in kg
-    e = 1.602177*10**-19 # primary charge in C
-    h = 6.62607*10**-34 # planck const in m**2*kg/s
-    c =  299792458 # speed of light in m/s
+    # m = 9.109383*10**-31 # electron rest mass in kg
+    # e = 1.602177*10**-19 # primary charge in C
+    # h = 6.62607*10**-34 # planck const in m**2*kg/s
+    # c =  299792458 # speed of light in m/s
     
-    e_lambda = h/np.sqrt(2*m*e*e_0*10**3)/np.sqrt(1 + e*e_0*10**3/2/m/c**2)*10**10;
+    e_lambda = (pc.h * pc.c) / np.sqrt((pc.e * V)**2  + 2 * pc.e * V * pc.m_e * pc.c**2)
     
     return e_lambda
 
 
+def FuncAberrUV(u, v, aberrcoeff):
+    """
+    Returns the aberration function using the aberration coefficients
+    :param u: fourier coordinate x
+    :param v: fourier coordinate y
+    :param aberrcoeff: array of floats
+        array of aberration coefficients
+    :return:
+    fun_aberr:
+    """
+
+    u2 = u*u
+    u3 = u2*u
+    u4 = u3*u
+    
+    v2 = v*v
+    v3 = v2*v
+    v4 = v3*v
+    
+    # aberr are in unit of meter.
+    C1   = aberrcoeff[0] # defocus
+    C12a = aberrcoeff[1] # 2 stig
+    C12b = aberrcoeff[2] # 2 stig
+    C23a = aberrcoeff[3] # 3 stig
+    C23b = aberrcoeff[4] # 3 stig
+    C21a = aberrcoeff[5] # coma 
+    C21b = aberrcoeff[6] # coma
+    C3   = aberrcoeff[7] # Spherical abb
+    C34a = aberrcoeff[8] # 4 stig
+    C34b = aberrcoeff[9] # 4 stig
+    C32a = aberrcoeff[10] # star
+    C32b = aberrcoeff[11] # star
+    
+    # output:  chi function. in unit of meter*radian.  multiply by 2pi/lambda to get dimensionless
+    func_aberr =  1/2*C1*(u2+v2)\
+            + 1/2*(C12a*(u2-v2) + 2*C12b*u*v)\
+            + 1/3*(C23a*(u3-3*u*v2) + C23b*(3*u2*v - v3))\
+            + 1/3*(C21a*(u3+u*v2) + C21b*(v3+u2*v))\
+            + 1/4* C3*(u4+v4+2*u2*v2)\
+            + 1/4* C34a*(u4-6*u2*v2+v4)\
+            + 1/4* C34b*(4*u3*v-4*u*v3)\
+            + 1/4* C32a*(u4-v4)\
+            + 1/4* C32b*(2*u3*v + 2*u*v3)\
+    
+    return func_aberr
+
+
 def define_probe_function(V, alpha, px_cal, array_px, aberr_input, dose = 1, plot_me = False):
     """
-    
+
+    :param V: int
+        accelerating voltage - volts
+    :param alpha:
+    :param px_cal: float
+        pixel size in m
+    :param array_px: int
+        number of pixels in detector plane
+    :param aberr_input: numpy array of floats
+        aberration coeffs
+    :param dose: 
+    :param plot_me: boolean
+        default False
+    :return:
+    func_probe: complex numpy array
+        probe function
     """
-    l =(pc.h * pc.c) / np.sqrt((pc.e * V)**2  + 2 * pc.e * V * pc.m_e * pc.c**2)  # relativistic wavelength
+    l = e_lambda(V)
     #% probe function
     #% chi function
     cen = array_px / 2 # center of array
@@ -86,20 +152,20 @@ def define_probe_function(V, alpha, px_cal, array_px, aberr_input, dose = 1, plo
     #% probe function - reciprocal space
     A = func_ObjApt*func_transfer
     #% probe function - real space
-    func_probe=fftshift(ifft2(ifftshift(A)));
+    func_probe = fftshift(ifft2(ifftshift(A)))
     
     if plot_me:
         fig_mul = 0.0625
         #max_fig = px_cal * array_px
         im_lim = [cen - (array_px * fig_mul), cen + (array_px * fig_mul)]
         fig_lim =[-px_cal *array_px *fig_mul ,px_cal *array_px *fig_mul]
-        plt.figure;
-        fig, [[ax11, ax12], [ax21, ax22]] = plt.subplots(2,2)
-        ax11.imshow(np.angle(A))#axis square;colorbar; axis off
+        plt.figure()
+        fig, [[ax11, ax12], [ax21, ax22]] = plt.subplots(2, 2)
+        ax11.imshow(np.angle(A))
         ax11.set_title('Aperture Phase Surface')
         ax11.set_xlim(im_lim)
         ax11.set_ylim(im_lim)
-        ax12.imshow(abs(func_probe))#;axis image; colorbar; axis off
+        ax12.imshow(abs(func_probe))
         ax12.set_title('Probe Function')
         ax12.set_xlim(im_lim)
         ax12.set_ylim(im_lim)
@@ -111,7 +177,7 @@ def define_probe_function(V, alpha, px_cal, array_px, aberr_input, dose = 1, plo
         ax22.set_title('imag')
         ax22.set_xlim(im_lim)
         ax22.set_ylim(im_lim)
-        #plt.title(str(aberr_input[0]) + str(aberr_input[7]))
+
         x_list = np.arange(-cen * px_cal, cen*px_cal, px_cal)
         plt.figure()
         plt.plot(x_list, abs(func_probe[int(array_px/2), :]))
@@ -121,25 +187,26 @@ def define_probe_function(V, alpha, px_cal, array_px, aberr_input, dose = 1, plo
         plt.title('df = ' + str(aberr_input[0]) + ' Cs = ' + str(aberr_input[7]))
     return func_probe   
 
+
 #%%
-V = 80000#15000 #V
-alpha = 25e-3#100e-3 # rad
-px_cal = 0.25e-10#0.45e-10 # in m 
-array_px = 1024
+V = 80000
+alpha = 10e-3#100e-3 # rad
+px_cal = 0.2e-10#0.45e-10 # in m 
+array_px = 72
 output_size = 256
 save_hdf5 = False
 save_path = r'Y:\2019\cm22979-8\processing\Merlin\20191114_15kVptycho_graphene\probe_sims'
 save_file = r'\15kV_10um_Cs987um'
 
 aberrcoeff = np.zeros((12))
-aberrcoeff[0] = -200e-9 # defocus
+aberrcoeff[0] = 200e-10 # defocus
 aberrcoeff[1] = 0# 2 stig
 aberrcoeff[2] = 0  # 2 stig
 aberrcoeff[3] = 0 # 3 stig
 aberrcoeff[4] = 0 # 3 stig
 aberrcoeff[5] = 0 # coma 
 aberrcoeff[6] = 0 # coma
-aberrcoeff[7] = 1e-6#987e-6 # Spherical abb
+aberrcoeff[7] = 0#987e-6 # Spherical abb
 aberrcoeff[8] = 0# 4 stig
 aberrcoeff[9]  = 0# 4 stig
 aberrcoeff[10] = 0 # star
@@ -147,7 +214,7 @@ aberrcoeff[11]  = 0 # star
 aberr_input = aberrcoeff
 probe = define_probe_function(V,alpha, px_cal,array_px, aberrcoeff, dose = 1, plot_me = True)
 px_from, px_to = int(array_px/2 - output_size / 2) , int(array_px/2 + output_size / 2)
-output_probe = probe[px_from:px_to, px_from:px_to]
+output_probe = probe#[px_from:px_to, px_from:px_to]
 plt.figure(); plt.imshow(np.real(output_probe))
 
 if save_hdf5 == True:
