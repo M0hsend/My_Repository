@@ -11,31 +11,7 @@ import pyprismatic as pr
 import numpy as np
 from shutil import copyfile
 import argparse
-import sys
 
-#
-#
-#root_path = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_v3'
-#
-#if not os.path.exists(root_path):
-#    os.mkdir(root_path)
-#
-#submit_path = '/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/create_sim_data_prismatic'
-#
-#
-#coord_dict ={'/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/create_sim_data_prismatic/xyz_files/Graphene_SW_mod1.xyz':'graphene_small_hole'}
-#             #'/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/graphene_island_extended.xyz':'graphene_island',
-#             #'/dls/science/groups/e02/Mohsen/code/sim_4DSTEM/ptypy_pycho_sim_matrix/create_sim_data_prismatic/xyz_files/graphene_island_doped_extended.xyz': 'graphene_island_doped'}
-#
-#convergence_dict = {10:'10mrad',
-#                    15:'15mrad',
-#                    25:'25mrad',
-#                    32:'32mrad'}
-#
-#def_dict = {0:'zero_def',
-#            50:'50A_def',
-#            100:'100A_def',
-#            150:'150A_def'}
 
 
 def make_output_filename(root_path, xyz, conv_semiangle, def_val, step_size):
@@ -202,19 +178,6 @@ def run_sim(submit_path, root_path, xyz, conv_semiangle, def_val, step_size):
     meta.cellDimY = cell_dims[1]
     meta.cellDimZ = cell_dims[2]
     
-#    if coord_dict[xyz] == 'graphene_bilayer':
-#        meta.cellDimX = 16.7663
-#        meta.cellDimY = 16.94
-#        meta.cellDimZ = 3.395
-#    elif coord_dict[xyz] == 'graphene_SW':
-#        meta.cellDimX = 29.03
-#        meta.cellDimY = 29.03
-#        meta.cellDimZ = 1.1168
-#    elif coord_dict[xyz] == 'graphene_hole':
-#        meta.cellDimX = 81.5211
-#        meta.cellDimY = 84.884
-#        meta.cellDimZ = 8.000
-    
     meta.tileX = 3
     meta.tileY = 3
     meta.tileZ = 1
@@ -308,32 +271,45 @@ def add_dose_noise(file_path, dose, add_noise = True):
     
 
 def main(xyz, sim_conditions, root_path, script_path, dose):
-    
-    
-    for atom_model in list(coord_dict.keys()):
-        for conv_semi in list(convergence_dict.keys()):
-            for def_val in list(def_dict.keys()):
-                sim_file = run_sim(atom_model, conv_semi, def_val)
-                add_dose_noise(sim_file, 1e6)
-#    
-#    
-#    for dirname, dirnames, filenames in os.walk(root_path):
-#
-#        for filename in filenames:
-#            if filename.endswith('h5'):
-#                save_skips(os.path.join(dirname, filename))
+    """
+    Running the matrix of sims.
+
+    Parameters
+    ----------
+    xyz: str
+    full path of the xyz coordination file
+    sim_conditions: np.array
+        array with the shape (3, n) with n the total number conditions under consideration
+        The order of the three parameters:
+        convergence semi-angle (rad), defocus (m), step_size (m)
+    root_path: str
+        full path of the directory where the sims are being saved
+    script_path: str
+        full path of the cluster script submit directory
+    dose: int
+        target sum intensity per diffraction pattern
+
+    Returns
+    -------
+    """
+    if not os.path.exists(root_path):
+        os.makedirs(root_path)
+    for i in np.arange(sim_conditions.shape[1]):
+        sim_file = run_sim(script_path, root_path, xyz, sim_conditions[0,i], sim_conditions[1,i], sim_conditions[2,i])
+        add_dose_noise(sim_file, dose)
 
     
 if __name__ =='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('beamline', help='Beamline name')
-    parser.add_argument('year', help='Year')
-    parser.add_argument('visit', help='Session visit code')
-    parser.add_argument('folder', nargs= '?', help='Option to add folder')
+    parser.add_argument('xyz', help='path for the xyz file')
+    parser.add_argument('sim_conditions', help='np.array with the sim conditions')
+    parser.add_argument('root_path', help='path where the sims to be saved')
+    parser.add_argument('script_path', help='path where the scripts live')
+    parser.add_argument('dose', help='int, target sum dp')
     v_help = "Display all debug log messages"
     parser.add_argument("-v", "--verbose", help=v_help, action="store_true",
                         default=False)
 
     args = parser.parse_args()
 
-    main(args.beamline, args.year, args.visit, args.folder)   
+    main(args.xyz, args.sim_conditions, args.root_path, args.script_path, args.dose)
