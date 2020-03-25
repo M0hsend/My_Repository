@@ -35,8 +35,8 @@ def make_output_filename(root_path, xyz, conv_semiangle, def_val, step_size):
         full path and h5 file sim file name
     '''
     output_name = os.path.basename(xyz).split('.')[0] + \
-                '_' + str(conv_semiangle) + 'mrad_' + str(def_val) + \
-                'm_def_' + str(step_size) + 'm_step_size'
+                '_' + "{0:.1f}".format(conv_semiangle*1e3) + 'mrad_' + "{0:.2f}".format(def_val*1e10) + \
+                'A_def_' + "{0:.2f}".format(step_size*1e10) + 'A_step_size'
     output_path = os.path.join(root_path, output_name)
     if not os.path.exists(output_path):
         os.mkdir(output_path)
@@ -69,8 +69,8 @@ def param_filename(root_path, xyz, conv_semiangle, def_val, step_size):
         full path and txt file sim file name
     '''
     output_name = os.path.basename(xyz).split('.')[0] + \
-                '_' + str(conv_semiangle) + 'mrad_' + str(def_val) + \
-                'm_def_' + str(step_size) + 'm_step_size'
+                '_' + "{0:.1f}".format(conv_semiangle*1e3) + 'mrad_' + "{0:.2f}".format(def_val*1e10) + \
+                'A_def_' + "{0:.2f}".format(step_size*1e10) + 'A_step_size'
     output_path = os.path.join(root_path, output_name)
     if not os.path.exists(output_path):
         os.mkdir(output_path)
@@ -131,7 +131,7 @@ def get_cell_dims(xyz):
     
 
 
-def run_sim(submit_path, root_path, xyz, conv_semiangle, def_val, step_size):
+def run_sim(submit_path, root_path, xyz, pixelSize, conv_semiangle, def_val, step_size):
     '''
     generates a meta parametre and runs a pyprismatic simulation
     
@@ -143,6 +143,8 @@ def run_sim(submit_path, root_path, xyz, conv_semiangle, def_val, step_size):
         full path of the directory where the sims are being saved
     xyz: str
         full path of the xyz coordination file
+    pixelSize: float
+        pixel size in (m) in real space
     conv_semiangle: float
         probe convergence semi angle in (rad)
     def_val: float
@@ -160,8 +162,8 @@ def run_sim(submit_path, root_path, xyz, conv_semiangle, def_val, step_size):
     sim_file_path = make_output_filename(root_path, xyz, conv_semiangle, def_val, step_size)
     # meta.writeParameters(param_filename(xyz, conv_semiangle, def_val))
     meta.numThreads = 12
-    meta.realspacePixelSizeX = 0.11
-    meta.realspacePixelSizeY = 0.11
+    meta.realspacePixelSizeX = pixelSize * 1e10
+    meta.realspacePixelSizeY = pixelSize * 1e10
     meta.potBound = 2
     meta.numFP = 8
     meta.sliceThickness = 8  # may change this 
@@ -226,7 +228,7 @@ def add_dose_noise(file_path, dose, add_noise = True):
     file_path: str
         full path and name of the sim h5 file
     dose: int
-        target sum intensity per diffraction pattern
+        target sum intensity of the entire 4DSTEM data
     add_noise: boolean
         if True it also adds posson noise to the diffraction patterns
     Returns
@@ -239,11 +241,11 @@ def add_dose_noise(file_path, dose, add_noise = True):
         data = f.get('4DSTEM_simulation/data/datacubes/CBED_array_depth0000/datacube')
         data = np.array(data)
     
-    
+    factor = dose / np.sum(data)
     if add_noise is False:
-        data_highD = dose * data
+        data_highD = factor * data
     else:
-        data_highD = dose * data
+        data_highD = factor * data
         data_highD = np.random.poisson(data_highD)
     f = h5py.File(file_path, 'a')
     f.create_dataset('4DSTEM_simulation/data/datacubes/hdose_noisy_data', data = data_highD, dtype='float32')
@@ -270,46 +272,63 @@ def add_dose_noise(file_path, dose, add_noise = True):
 #    return
     
 
-def main(xyz, sim_conditions, root_path, script_path, dose):
-    """
-    Running the matrix of sims.
-
-    Parameters
-    ----------
-    xyz: str
-    full path of the xyz coordination file
-    sim_conditions: np.array
-        array with the shape (3, n) with n the total number conditions under consideration
-        The order of the three parameters:
-        convergence semi-angle (rad), defocus (m), step_size (m)
-    root_path: str
-        full path of the directory where the sims are being saved
-    script_path: str
-        full path of the cluster script submit directory
-    dose: int
-        target sum intensity per diffraction pattern
-
-    Returns
-    -------
-    """
+def main():
+    pixelSize = 0.170e-10
+    xyz = '/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/ptyREX_sim_matrix/xyz_files/Graphene_defect.xyz'
+    sim_conditions = np.load('/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/ptyREX_sim_matrix/sim_condtions.npy')
+    root_path = '/dls/e02/data/2020/cm26481-1/processing/pty_simulated_data_MD/sim_matrix_ptyREX_v2/'
+    script_path = '/dls/science/groups/e02/Mohsen/code/Git_Repos/My_Repository/ptyREX_sim_matrix/'
+    dose = 1e10
     if not os.path.exists(root_path):
         os.makedirs(root_path)
     for i in np.arange(sim_conditions.shape[1]):
-        sim_file = run_sim(script_path, root_path, xyz, sim_conditions[0,i], sim_conditions[1,i], sim_conditions[2,i])
-        add_dose_noise(sim_file, dose)
+        sim_file = run_sim(script_path, root_path, xyz, pixelSize, sim_conditions[0,i], sim_conditions[1,i], sim_conditions[2,i])
+        add_dose_noise(sim_file, dose)    
 
     
 if __name__ =='__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('xyz', help='path for the xyz file')
-    parser.add_argument('sim_conditions', help='np.array with the sim conditions')
-    parser.add_argument('root_path', help='path where the sims to be saved')
-    parser.add_argument('script_path', help='path where the scripts live')
-    parser.add_argument('dose', help='int, target sum dp')
-    v_help = "Display all debug log messages"
-    parser.add_argument("-v", "--verbose", help=v_help, action="store_true",
-                        default=False)
+    main()
 
-    args = parser.parse_args()
-
-    main(args.xyz, args.sim_conditions, args.root_path, args.script_path, args.dose)
+#def main(xyz, sim_conditions, root_path, script_path, dose):
+#    """
+#    Running the matrix of sims.
+#
+#    Parameters
+#    ----------
+#    xyz: str
+#    full path of the xyz coordination file
+#    sim_conditions: np.array
+#        array with the shape (3, n) with n the total number conditions under consideration
+#        The order of the three parameters:
+#        convergence semi-angle (rad), defocus (m), step_size (m)
+#    root_path: str
+#        full path of the directory where the sims are being saved
+#    script_path: str
+#        full path of the cluster script submit directory
+#    dose: int
+#        target sum intensity per diffraction pattern
+#
+#    Returns
+#    -------
+#    """
+#    if not os.path.exists(root_path):
+#        os.makedirs(root_path)
+#    for i in np.arange(sim_conditions.shape[1]):
+#        sim_file = run_sim(script_path, root_path, xyz, sim_conditions[0,i], sim_conditions[1,i], sim_conditions[2,i])
+#        add_dose_noise(sim_file, dose)
+#
+#    
+#if __name__ =='__main__':
+#    parser = argparse.ArgumentParser()
+#    parser.add_argument('xyz', help='path for the xyz file')
+#    parser.add_argument('sim_conditions', help='np.array with the sim conditions')
+#    parser.add_argument('root_path', help='path where the sims to be saved')
+#    parser.add_argument('script_path', help='path where the scripts live')
+#    parser.add_argument('dose', help='int, target sum dp')
+#    v_help = "Display all debug log messages"
+#    parser.add_argument("-v", "--verbose", help=v_help, action="store_true",
+#                        default=False)
+#
+#    args = parser.parse_args()
+#
+#    main(args.xyz, args.sim_conditions, args.root_path, args.script_path, args.dose)
