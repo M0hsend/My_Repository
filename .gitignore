@@ -1,3 +1,4 @@
 /logs/
 __pycache__/
 notebooks/.ipynb_checkpoints/*
+wip/.ipynb_checkpoints/*

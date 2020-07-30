@@ -65,14 +65,10 @@ def _create_metadata_dict(session_path, entry_dict):
     
     metadata_dict['Comments'] = entry_dict.pop('Notes')
     
-#    hdf_list = _get_hdf_list(os.path.join(session_path, entry_dict['Folder']))
-#    for file in hdf_list:
-#        shape = _get_hdf_details(file)
-#        metadata_dict['hdf5 scan shape'] = shape[:2]
-#        metadata_dict['hdf5 detector shape'] = shape[2:]
     return metadata_dict
 #%% 
 #test = '/dls/e02/data/2020/cm26481-1/processing/Merlin/20200130_80kV_graphene_600C_pty/20200131 115200/80kV_600C_CLA_40um_CL_8cm_8C_20Mx_A2_4p71_df0nm_scan_array_255by255_diff_plane_515by515_.hdf5'
+
 def _get_hdf_details(hdf_file):
     data = pxm.load(hdf_file, lazy=True)
     return data.data.shape
@@ -84,47 +80,9 @@ def _get_hdf_list(path):
         if file.endswith('.hdf5'):
             hdf_list.append(os.path.join(path,file))
     return hdf_list
+
         
 #%%
-#def save_metadata_to_hdf5(dic, filename, path = '/Experiments/__unnamed__/original_metadata/'):
-#    """
-#    recursively saves a nested dict into an hdf5 file
-#    """
-#    if os.path.exists(filename):
-#        with h5py.File(filename, 'a') as h5file:
-#            _recursively_save_dict_contents_to_group(h5file, path, dic)
-#    else:
-#        with h5py.File(filename, 'w') as h5file:
-#            _recursively_save_dict_contents_to_group(h5file, path, dic)
-#
-#
-#def _recursively_save_dict_contents_to_group(h5file, path, dic):
-#
-#    for key, item in dic.items():
-#        if isinstance(item, (np.ndarray, list, float, int, str)):
-#            h5file[path + key] = item
-#        elif isinstance(item, dict):
-#            _recursively_save_dict_contents_to_group(h5file, path + key + '/', item)  
-#%%
-#def load_metadata_from_hdf5(filename, path = '/Experiments/__unnamed__/original_metadata/'):
-#    """
-#    recursively loads an hdf5 file to a nested dict
-#
-#    """
-#    with h5py.File(filename, 'r') as h5file:
-#        return _recursively_load_dict_contents_from_group(h5file, path)
-#
-#
-#def _recursively_load_dict_contents_from_group(h5file, path):
-#    
-#    ans = {}
-#    for key, item in h5file[path].items():
-#        if isinstance(item, h5py._hl.dataset.Dataset):
-#            ans[key] = item[()]
-#        elif isinstance(item, h5py._hl.group.Group):
-#            ans[key] = _recursively_load_dict_contents_from_group(h5file, path + key + '/')
-#    return ans
-##%%
 list_of_dicts = parse_excel(excel_path)
 #%%
 for entry in list_of_dicts:
